@@ -30,48 +30,37 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1   # فقط آخرین commit را دانلود می‌کند → سریع‌تر
 
       - name: Clean stream-test folder
         if: ${{ inputs.clean_stream_test }}
         run: |
           echo "Cleaning stream-test folder..."
-          git rm -r --cached stream-test || true   # حذف از git
+          git rm -r --cached stream-test || true   # حذف از Git
           rm -rf stream-test                        # حذف فیزیکی
 
       - name: Create stream-test folder
-        run: |
-          mkdir -p stream-test
+        run: mkdir -p stream-test
 
       - name: Stream download and split into 90MB parts
         run: |
           set -euo pipefail
-
           echo "Starting stream download and split..."
-
-          curl -L \
-            --fail \
-            --retry 3 \
-            "${{ inputs.download_url }}" | split \
-            -b 90M \
-            -d \
-            -a 4 \
-            - \
-            "stream-test/${{ inputs.output_name }}.part_"
-
+          curl -L --fail --retry 3 "${{ inputs.download_url }}" | split \
+            -b 90M -d -a 4 - "stream-test/${{ inputs.output_name }}.part_"
           echo "Generated parts:"
           ls -lh stream-test
 
       - name: Commit and push files in batches
         run: |
           set -euo pipefail
-
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           BATCH_SIZE=5
           COUNT=0
           BATCH=1
-
           files=(stream-test/*)
 
           if [ ${#files[@]} -eq 0 ]; then
@@ -88,7 +77,6 @@ jobs:
                 git commit -m "Add streamed parts batch $BATCH"
                 git push
               fi
-
               COUNT=0
               BATCH=$((BATCH + 1))
             fi
