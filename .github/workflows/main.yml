@@ -1,58 +1,61 @@
-name: Free Disk Space
+name: Nova_Wipe
 
 on:
   workflow_dispatch:
 
 jobs:
-  free-disk-space:
+  wipe-and-check-disk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show disk space before cleanup
+      - name: Show disk space BEFORE cleanup
         run: |
           echo "=== Disk space BEFORE cleanup ==="
           df -h /
+          echo ""
+          echo "=== Largest folders in / BEFORE cleanup ==="
+          sudo du -h --max-depth=1 / 2>/dev/null | sort -hr | head -n 20
+          echo ""
+          echo "=== Largest folders in /opt BEFORE cleanup ==="
+          sudo du -h --max-depth=1 /opt 2>/dev/null | sort -hr | head -n 20
+          echo ""
+          echo "=== Largest folders in /usr/local BEFORE cleanup ==="
+          sudo du -h --max-depth=1 /usr/local 2>/dev/null | sort -hr | head -n 20
+          echo ""
+          echo "=== Docker disk usage BEFORE cleanup ==="
+          docker system df || true
 
       - name: Clean unnecessary preinstalled tools
         run: |
-          echo "Cleaning Android SDK..."
+          echo "=== Cleaning unnecessary tools ==="
           sudo rm -rf /usr/local/lib/android || true
-
-          echo "Cleaning .NET..."
           sudo rm -rf /usr/share/dotnet || true
-
-          echo "Cleaning Haskell / GHCup..."
           sudo rm -rf /usr/local/.ghcup || true
-
-          echo "Cleaning CodeQL..."
           sudo rm -rf /opt/hostedtoolcache/CodeQL || true
-
-          echo "Cleaning Julia..."
           sudo rm -rf /usr/local/julia* || true
-
-          echo "Cleaning Swift..."
           sudo rm -rf /usr/share/swift || true
-
-          echo "Cleaning browsers..."
           sudo rm -rf /usr/local/share/chromium || true
           sudo rm -rf /usr/local/share/powershell || true
           sudo rm -rf /opt/google/chrome || true
           sudo rm -rf /opt/microsoft || true
-
-          echo "Cleaning Docker images..."
           docker system prune -af || true
-
-          echo "Cleaning apt cache..."
           sudo apt-get clean || true
           sudo rm -rf /var/lib/apt/lists/* || true
+          echo "=== Cleanup finished ==="
 
-          echo "Cleanup finished."
-
-      - name: Show disk space after cleanup
+      - name: Show disk space AFTER cleanup
         run: |
           echo "=== Disk space AFTER cleanup ==="
           df -h /
-
           echo ""
-          echo "=== Largest folders after cleanup ==="
+          echo "=== Largest folders in / AFTER cleanup ==="
           sudo du -h --max-depth=1 / 2>/dev/null | sort -hr | head -n 20
+          echo ""
+          echo "=== Largest folders in /opt AFTER cleanup ==="
+          sudo du -h --max-depth=1 /opt 2>/dev/null | sort -hr | head -n 20
+          echo ""
+          echo "=== Largest folders in /usr/local AFTER cleanup ==="
+          sudo du -h --max-depth=1 /usr/local 2>/dev/null | sort -hr | head -n 20
+          echo ""
+          echo "=== Docker disk usage AFTER cleanup ==="
+          docker system df || true
