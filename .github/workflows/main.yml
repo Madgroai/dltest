@@ -1,38 +1,58 @@
-name: Check Disk Space
+name: Free Disk Space
 
 on:
   workflow_dispatch:
 
 jobs:
-  check-disk-space:
+  free-disk-space:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show disk space
+      - name: Show disk space before cleanup
         run: |
-          echo "=== Disk space overview ==="
-          df -h
+          echo "=== Disk space BEFORE cleanup ==="
+          df -h /
 
-          echo ""
-          echo "=== Root filesystem usage ==="
+      - name: Clean unnecessary preinstalled tools
+        run: |
+          echo "Cleaning Android SDK..."
+          sudo rm -rf /usr/local/lib/android || true
+
+          echo "Cleaning .NET..."
+          sudo rm -rf /usr/share/dotnet || true
+
+          echo "Cleaning Haskell / GHCup..."
+          sudo rm -rf /usr/local/.ghcup || true
+
+          echo "Cleaning CodeQL..."
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+
+          echo "Cleaning Julia..."
+          sudo rm -rf /usr/local/julia* || true
+
+          echo "Cleaning Swift..."
+          sudo rm -rf /usr/share/swift || true
+
+          echo "Cleaning browsers..."
+          sudo rm -rf /usr/local/share/chromium || true
+          sudo rm -rf /usr/local/share/powershell || true
+          sudo rm -rf /opt/google/chrome || true
+          sudo rm -rf /opt/microsoft || true
+
+          echo "Cleaning Docker images..."
+          docker system prune -af || true
+
+          echo "Cleaning apt cache..."
+          sudo apt-get clean || true
+          sudo rm -rf /var/lib/apt/lists/* || true
+
+          echo "Cleanup finished."
+
+      - name: Show disk space after cleanup
+        run: |
+          echo "=== Disk space AFTER cleanup ==="
           df -h /
 
           echo ""
-          echo "=== Workspace usage ==="
-          du -sh "$GITHUB_WORKSPACE" 2>/dev/null || true
-
-          echo ""
-          echo "=== Largest folders in / ==="
+          echo "=== Largest folders after cleanup ==="
           sudo du -h --max-depth=1 / 2>/dev/null | sort -hr | head -n 20
-
-          echo ""
-          echo "=== Largest folders in /opt ==="
-          sudo du -h --max-depth=1 /opt 2>/dev/null | sort -hr | head -n 20
-
-          echo ""
-          echo "=== Largest folders in /usr/local ==="
-          sudo du -h --max-depth=1 /usr/local 2>/dev/null | sort -hr | head -n 20
-
-          echo ""
-          echo "=== Docker disk usage ==="
-          docker system df || true
