@@ -1,0 +1,67 @@
+name: Download and Split File
+
+on:
+  workflow_dispatch:
+    inputs:
+      download_url:
+        description: "Direct download URL"
+        required: true
+        type: string
+      output_name:
+        description: "Base name for output files"
+        required: false
+        default: "downloaded_file"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  download-split-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create downloads folder
+        run: mkdir -p downloads
+
+      - name: Download file
+        run: |
+          echo "Downloading file..."
+          curl -L \
+            --fail \
+            --retry 3 \
+            --output "downloads/${{ inputs.output_name }}" \
+            "${{ inputs.download_url }}"
+
+      - name: Split file into 90MB parts
+        run: |
+          echo "Splitting file into 90MB parts..."
+
+          split \
+            -b 90M \
+            -d \
+            -a 4 \
+            "downloads/${{ inputs.output_name }}" \
+            "downloads/${{ inputs.output_name }}.part_"
+
+          rm "downloads/${{ inputs.output_name }}"
+
+          echo "Generated parts:"
+          ls -lh downloads
+
+      - name: Commit and push files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add downloads/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Add downloaded file parts"
+            git push
+          fi
