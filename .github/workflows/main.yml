@@ -7,11 +7,18 @@ on:
         description: "Direct download URL"
         required: true
         type: string
+
       output_name:
         description: "Base name for output files"
         required: false
         default: "downloaded_file"
         type: string
+
+      clean_downloads:
+        description: "Delete downloads folder before downloading?"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -24,12 +31,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Clean downloads folder
+        if: ${{ inputs.clean_downloads }}
+        run: |
+          echo "Cleaning downloads folder..."
+          rm -rf downloads
+
       - name: Create downloads folder
-        run: mkdir -p downloads
+        run: |
+          mkdir -p downloads
 
       - name: Download file
         run: |
           echo "Downloading file..."
+
           curl -L \
             --fail \
             --retry 3 \
@@ -57,11 +72,11 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add downloads/
+          git add -A downloads/
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Add downloaded file parts"
+            git commit -m "Update downloaded file parts"
             git push
           fi
