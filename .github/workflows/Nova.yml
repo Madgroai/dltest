@@ -11,7 +11,7 @@ on:
       output_name:
         description: "Base name for output parts"
         required: false
-        default: "streamed_file"
+        default: "Nova_file"
         type: string
 
       clean_Nova:
