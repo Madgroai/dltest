@@ -35,7 +35,8 @@ jobs:
         if: ${{ inputs.clean_stream_test }}
         run: |
           echo "Cleaning stream-test folder..."
-          rm -rf stream-test
+          git rm -r --cached stream-test || true   # حذف از git
+          rm -rf stream-test                        # حذف فیزیکی
 
       - name: Create stream-test folder
         run: |
