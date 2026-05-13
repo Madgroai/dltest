@@ -1,0 +1,75 @@
+name: Stream Download Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      download_url:
+        description: "Direct download URL"
+        required: true
+        type: string
+
+      output_name:
+        description: "Base name for output parts"
+        required: false
+        default: "streamed_file"
+        type: string
+
+      clean_stream_test:
+        description: "Delete stream-test folder before downloading?"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  stream-download-split-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clean stream-test folder
+        if: ${{ inputs.clean_stream_test }}
+        run: |
+          echo "Cleaning stream-test folder..."
+          rm -rf stream-test
+
+      - name: Create stream-test folder
+        run: |
+          mkdir -p stream-test
+
+      - name: Stream download and split into 90MB parts
+        run: |
+          set -euo pipefail
+
+          echo "Starting stream download and split..."
+
+          curl -L \
+            --fail \
+            --retry 3 \
+            "${{ inputs.download_url }}" | split \
+            -b 90M \
+            -d \
+            -a 4 \
+            - \
+            "stream-test/${{ inputs.output_name }}.part_"
+
+          echo "Generated parts:"
+          ls -lh stream-test
+
+      - name: Commit and push files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add -A stream-test/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Add streamed download parts"
+            git push
+          fi
