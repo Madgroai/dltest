@@ -60,16 +60,40 @@ jobs:
           echo "Generated parts:"
           ls -lh stream-test
 
-      - name: Commit and push files
+      - name: Commit and push files in batches
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add -A stream-test/
+          BATCH_SIZE=5
+          COUNT=0
+          BATCH=1
 
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "Add streamed download parts"
+          files=(stream-test/*)
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No files found in stream-test."
+            exit 0
+          fi
+
+          for file in "${files[@]}"; do
+            git add "$file"
+            COUNT=$((COUNT + 1))
+
+            if [ "$COUNT" -ge "$BATCH_SIZE" ]; then
+              if ! git diff --cached --quiet; then
+                git commit -m "Add streamed parts batch $BATCH"
+                git push
+              fi
+
+              COUNT=0
+              BATCH=$((BATCH + 1))
+            fi
+          done
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Add streamed parts batch $BATCH"
             git push
           fi
