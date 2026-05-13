@@ -1,4 +1,4 @@
-name: Stream Download Test
+name: Nova-Download
 
 on:
   workflow_dispatch:
@@ -14,8 +14,8 @@ on:
         default: "streamed_file"
         type: string
 
-      clean_stream_test:
-        description: "Delete stream-test folder before downloading?"
+      clean_Nova:
+        description: "Delete Nova folder before downloading?"
         required: false
         default: false
         type: boolean
@@ -30,27 +30,25 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1   # فقط آخرین commit را دانلود می‌کند → سریع‌تر
 
-      - name: Clean stream-test folder
-        if: ${{ inputs.clean_stream_test }}
+      - name: Clean Nova folder
+        if: ${{ inputs.clean_Nova }}
         run: |
-          echo "Cleaning stream-test folder..."
-          git rm -r --cached stream-test || true   # حذف از Git
-          rm -rf stream-test                        # حذف فیزیکی
+          echo "Cleaning Nova folder..."
+          git rm -r --cached Nova || true   # حذف از Git
+          rm -rf Nova                        # حذف فیزیکی
 
-      - name: Create stream-test folder
-        run: mkdir -p stream-test
+      - name: Create Nova folder
+        run: mkdir -p Nova
 
       - name: Stream download and split into 90MB parts
         run: |
           set -euo pipefail
           echo "Starting stream download and split..."
           curl -L --fail --retry 3 "${{ inputs.download_url }}" | split \
-            -b 90M -d -a 4 - "stream-test/${{ inputs.output_name }}.part_"
+            -b 90M -d -a 4 - "Nova/${{ inputs.output_name }}.part_"
           echo "Generated parts:"
-          ls -lh stream-test
+          ls -lh Nova
 
       - name: Commit and push files in batches
         run: |
@@ -61,10 +59,10 @@ jobs:
           BATCH_SIZE=5
           COUNT=0
           BATCH=1
-          files=(stream-test/*)
+          files=(Nova/*)
 
           if [ ${#files[@]} -eq 0 ]; then
-            echo "No files found in stream-test."
+            echo "No files found in Nova."
             exit 0
           fi
 
